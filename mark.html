@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>道路打标工具</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#165DFF',
+                        secondary: '#36D399',
+                        accent: '#F59E0B',
+                        neutral: '#1F2937',
+                        'neutral-light': '#F3F4F6',
+                    },
+                    fontFamily: {
+                        inter: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .btn-primary {
+                @apply bg-primary text-white px-4 py-2 rounded-lg shadow-md hover:bg-primary/90 transition-all duration-200;
+            }
+            .btn-secondary {
+                @apply bg-secondary text-white px-4 py-2 rounded-lg shadow-md hover:bg-secondary/90 transition-all duration-200;
+            }
+            .btn-accent {
+                @apply bg-accent text-white px-4 py-2 rounded-lg shadow-md hover:bg-accent/90 transition-all duration-200;
+            }
+            .btn-outline {
+                @apply border border-primary text-primary px-4 py-2 rounded-lg hover:bg-primary/10 transition-all duration-200;
+            }
+            .form-control {
+                @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-200;
+            }
+            .card {
+                @apply bg-white rounded-xl shadow-md p-6 transition-all duration-300 hover:shadow-lg;
+            }
+            .label {
+                @apply block text-sm font-medium text-gray-700 mb-1;
+            }
+            .tag {
+                @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-inter min-h-screen">
+    <div class="container mx-auto px-4 py-8 max-w-5xl">
+        <!-- 标题区域 -->
+        <header class="mb-8 text-center">
+            <h1 class="text-[clamp(1.8rem,3vw,2.5rem)] font-bold text-neutral mb-2">道路打标工具</h1>
+            <p class="text-gray-600 max-w-2xl mx-auto">快速记录道路特征和环境信息，支持CSV导出</p>
+        </header>
+
+        <!-- 主内容区域 -->
+        <main class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- 左侧控制面板 -->
+            <section class="lg:col-span-1 space-y-6">
+                <!-- 天气和道路类型选择 -->
+                <div class="card">
+                    <h2 class="text-lg font-semibold text-neutral mb-4 flex items-center">
+                        <i class="fa fa-sliders mr-2 text-primary"></i>环境设置
+                    </h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="label">天气状况</label>
+                            <select id="weather-select" class="form-control">
+                                <option value="">请选择天气</option>
+                                <option value="晴天">晴天</option>
+                                <option value="多云">多云</option>
+                                <option value="雨天">雨天</option>
+                                <option value="雪天">雪天</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="label">道路类型</label>
+                            <select id="road-select" class="form-control">
+                                <option value="">请选择道路类型</option>
+                                <option value="高速公路">高速公路</option>
+                                <option value="城市道路">城市道路</option>
+                                <option value="乡村道路">乡村道路</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="selected-filters" class="mt-4 hidden">
+                        <div class="p-2 bg-primary/10 rounded-lg">
+                            <div class="flex flex-wrap gap-2">
+                                <div id="current-weather" class="hidden">
+                                    <span class="tag bg-blue-100 text-blue-800">
+                                        <i class="fa fa-cloud mr-1"></i>
+                                        <span id="current-weather-text">-</span>
+                                        <button id="clear-weather" class="ml-1 text-blue-800 hover:text-blue-600">
+                                            <i class="fa fa-times-circle"></i>
+                                        </button>
+                                    </span>
+                                </div>
+                                <div id="current-road" class="hidden">
+                                    <span class="tag bg-green-100 text-green-800">
+                                        <i class="fa fa-road mr-1"></i>
+                                        <span id="current-road-text">-</span>
+                                        <button id="clear-road" class="ml-1 text-green-800 hover:text-green-600">
+                                            <i class="fa fa-times-circle"></i>
+                                        </button>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 操作按钮 -->
+                <div class="card">
+                    <h2 class="text-lg font-semibold text-neutral mb-4 flex items-center">
+                        <i class="fa fa-cog mr-2 text-primary"></i>操作
+                    </h2>
+                    <div class="space-y-3">
+                        <button id="export-btn" class="btn-primary w-full py-3 flex items-center justify-center opacity-50 cursor-not-allowed" disabled>
+                            <i class="fa fa-download mr-2"></i>导出CSV
+                        </button>
+                        <button id="undo-btn" class="btn-outline w-full py-3 flex items-center justify-center opacity-50 cursor-not-allowed" disabled>
+                            <i class="fa fa-undo mr-2"></i>撤销打标
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 右侧内容区域 -->
+            <section class="lg:col-span-2 space-y-6">
+                <!-- 物标按钮 -->
+                <div class="card">
+                    <h2 class="text-lg font-semibold text-neutral mb-4 flex items-center">
+                        <i class="fa fa-map-marker mr-2 text-primary"></i>物标标记
+                    </h2>
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                        <button data-landmark="恶路" class="landmark-btn btn-secondary py-3 flex flex-col items-center justify-center">
+                            <i class="fa fa-exclamation-triangle text-2xl mb-2"></i>
+                            <span class="font-medium">恶路</span>
+                        </button>
+                        <button data-landmark="石板路" class="landmark-btn btn-secondary py-3 flex flex-col items-center justify-center">
+                            <i class="fa fa-th-large text-2xl mb-2"></i>
+                            <span class="font-medium">石板路</span>
+                        </button>
+                        <button data-landmark="减速带" class="landmark-btn btn-secondary py-3 flex flex-col items-center justify-center">
+                            <i class="fa fa-minus text-2xl mb-2"></i>
+                            <span class="font-medium">减速带</span>
+                        </button>
+                        <button data-landmark="轨道" class="landmark-btn btn-secondary py-3 flex flex-col items-center justify-center">
+                            <i class="fa fa-train text-2xl mb-2"></i>
+                            <span class="font-medium">轨道</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 记录列表 -->
+                <div class="card">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-lg font-semibold text-neutral flex items-center">
+                            <i class="fa fa-list mr-2 text-primary"></i>标记记录
+                        </h2>
+                        <span id="record-count" class="text-sm bg-primary/10 text-primary px-3 py-1 rounded-full">
+                            0 条记录
+                        </span>
+                    </div>
+                    
+                    <div id="records-container" class="space-y-3 max-h-[500px] overflow-y-auto pr-1">
+                        <div id="empty-state" class="py-10 text-center">
+                            <i class="fa fa-file-text-o text-4xl text-gray-300 mb-3"></i>
+                            <p class="text-gray-500">暂无标记记录</p>
+                            <p class="text-gray-400 text-sm mt-1">选择天气、道路类型并点击物标按钮开始记录</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- 页脚 -->
+        <footer class="mt-12 text-center text-gray-500 text-sm">
+            <p>© 2025 道路打标工具 | 设计与开发</p>
+        </footer>
+    </div>
+
+    <script>
+        // 初始化变量
+        let weather = null;
+        let road = null;
+        let records = [];
+        
+        // DOM 元素
+        const weatherSelect = document.getElementById('weather-select');
+        const roadSelect = document.getElementById('road-select');
+        const landmarkButtons = document.querySelectorAll('.landmark-btn');
+        const exportBtn = document.getElementById('export-btn');
+        const undoBtn = document.getElementById('undo-btn');
+        const recordsContainer = document.getElementById('records-container');
+        const emptyState = document.getElementById('empty-state');
+        const recordCount = document.getElementById('record-count');
+        const selectedFilters = document.getElementById('selected-filters');
+        const currentWeather = document.getElementById('current-weather');
+        const currentRoad = document.getElementById('current-road');
+        const currentWeatherText = document.getElementById('current-weather-text');
+        const currentRoadText = document.getElementById('current-road-text');
+        const clearWeatherBtn = document.getElementById('clear-weather');
+        const clearRoadBtn = document.getElementById('clear-road');
+        
+        // 天气选择
+        weatherSelect.addEventListener('change', () => {
+            weather = weatherSelect.value;
+            updateFilterDisplay();
+            checkExportButton();
+        });
+        
+        // 道路类型选择
+        roadSelect.addEventListener('change', () => {
+            road = roadSelect.value;
+            updateFilterDisplay();
+            checkExportButton();
+        });
+        
+        // 清除天气选择
+        clearWeatherBtn.addEventListener('click', () => {
+            weatherSelect.value = '';
+            weather = null;
+            updateFilterDisplay();
+            checkExportButton();
+        });
+        
+        // 清除道路选择
+        clearRoadBtn.addEventListener('click', () => {
+            roadSelect.value = '';
+            road = null;
+            updateFilterDisplay();
+            checkExportButton();
+        });
+        
+        // 更新筛选器显示
+        function updateFilterDisplay() {
+            let hasSelection = false;
+            
+            if (weather) {
+                currentWeatherText.textContent = weather;
+                currentWeather.classList.remove('hidden');
+                hasSelection = true;
+            } else {
+                currentWeather.classList.add('hidden');
+            }
+            
+            if (road) {
+                currentRoadText.textContent = road;
+                currentRoad.classList.remove('hidden');
+                hasSelection = true;
+            } else {
+                currentRoad.classList.add('hidden');
+            }
+            
+            if (hasSelection) {
+                selectedFilters.classList.remove('hidden');
+            } else {
+                selectedFilters.classList.add('hidden');
+            }
+        }
+        
+        // 物标按钮点击
+        landmarkButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const landmark = btn.dataset.landmark;
+                addRecord(landmark);
+            });
+        });
+        
+        // 添加记录
+        function addRecord(landmark) {
+            if (!weather || !road) {
+                alert('请先选择天气和道路类型');
+                return;
+            }
+            
+            const now = new Date();
+            // 精确到秒的时间格式
+            const timestamp = now.toLocaleString('zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            }).replace(/\//g, '-');
+            
+            const record = {
+                id: Date.now(),
+                timestamp,
+                landmark,
+                weather,
+                road
+            };
+            
+            records.unshift(record); // 将记录添加到数组开头，最新的记录在最前面
+            updateRecordsDisplay();
+            checkExportButton();
+            
+            // 添加动画效果
+            const firstRecord = recordsContainer.querySelector('.record-item');
+            if (firstRecord) {
+                firstRecord.classList.add('animate-pulse');
+                setTimeout(() => {
+                    firstRecord.classList.remove('animate-pulse');
+                }, 1000);
+            }
+        }
+        
+        // 更新记录显示
+        function updateRecordsDisplay() {
+            // 清空现有记录
+            recordsContainer.innerHTML = '';
+            
+            if (records.length === 0) {
+                recordsContainer.appendChild(emptyState);
+                recordCount.textContent = '0 条记录';
+                undoBtn.disabled = true;
+                undoBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                return;
+            }
+            
+            // 隐藏空状态
+            emptyState.classList.add('hidden');
+            
+            // 更新记录数量
+            recordCount.textContent = `${records.length} 条记录`;
+            
+            // 启用撤销按钮
+            undoBtn.disabled = false;
+            undoBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            
+            // 添加所有记录
+            records.forEach(record => {
+                const recordItem = document.createElement('div');
+                recordItem.className = 'record-item bg-gray-50 p-4 rounded-lg transition-all duration-200 hover:bg-gray-100';
+                recordItem.dataset.id = record.id;
+                
+                // 根据物标类型设置不同的图标颜色
+                let landmarkIconColor = 'text-blue-500';
+                switch(record.landmark) {
+                    case '恶路':
+                        landmarkIconColor = 'text-red-500';
+                        break;
+                    case '石板路':
+                        landmarkIconColor = 'text-yellow-500';
+                        break;
+                    case '减速带':
+                        landmarkIconColor = 'text-green-500';
+                        break;
+                    case '轨道':
+                        landmarkIconColor = 'text-cyan-500';
+                        break;
+                }
+                
+                recordItem.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <div class="flex items-start">
+                            <i class="fa fa-map-marker ${landmarkIconColor} text-xl mr-3 mt-0.5"></i>
+                            <div>
+                                <div class="flex items-center mb-1">
+                                    <span class="font-medium">${record.landmark}</span>
+                                    <span class="ml-2 text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">
+                                        ${record.timestamp}
+                                    </span>
+                                </div>
+                                <div class="grid grid-cols-2 gap-2 text-sm">
+                                    <div class="flex items-center">
+                                        <i class="fa fa-cloud text-gray-500 mr-1.5"></i>
+                                        <span>${record.weather}</span>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <i class="fa fa-road text-gray-500 mr-1.5"></i>
+                                        <span>${record.road}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <button class="delete-record text-gray-400 hover:text-red-500 transition-colors">
+                            <i class="fa fa-trash-o"></i>
+                        </button>
+                    </div>
+                `;
+                
+                recordsContainer.appendChild(recordItem);
+                
+                // 添加删除事件
+                const deleteBtn = recordItem.querySelector('.delete-record');
+                deleteBtn.addEventListener('click', () => {
+                    deleteRecord(record.id);
+                });
+            });
+        }
+        
+        // 删除记录
+        function deleteRecord(id) {
+            records = records.filter(record => record.id !== id);
+            updateRecordsDisplay();
+            checkExportButton();
+        }
+        
+        // 撤销打标 - 修改为删除最新的记录（数组的第一个元素）
+        undoBtn.addEventListener('click', () => {
+            if (records.length === 0) return;
+            
+            records.shift(); // 删除数组的第一个元素（最新的记录）
+            updateRecordsDisplay();
+            checkExportButton();
+        });
+        
+        // 检查是否可以启用导出按钮
+        function checkExportButton() {
+            if (records.length > 0) {
+                exportBtn.disabled = false;
+                exportBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            } else {
+                exportBtn.disabled = true;
+                exportBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            }
+        }
+        
+        // 导出CSV - 修改为添加UTF-8 BOM头
+        exportBtn.addEventListener('click', () => {
+            if (records.length === 0) return;
+            
+            // 创建CSV内容
+            let csvContent = "时间,物标类型,天气,道路类型\n";
+            
+            records.forEach(record => {
+                csvContent += `${record.timestamp},"${record.landmark}",${record.weather},${record.road}\n`;
+            });
+            
+            // 添加UTF-8 BOM头
+            const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
+            const csvBlob = new Blob([bom, csvContent], { type: 'text/csv;charset=utf-8;' });
+            
+            // 创建URL并下载
+            const url = URL.createObjectURL(csvBlob);
+            const link = document.createElement('a');
+            link.setAttribute('href', url);
+            link.setAttribute('download', `道路打标记录_${new Date().toISOString().slice(0,10)}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
+        
+        // 添加键盘快捷键
+        document.addEventListener('keydown', (e) => {
+            // Ctrl+数字键 快速选择物标
+            if (e.ctrlKey && /^[1-9]$/.test(e.key)) {
+                e.preventDefault();
+                const index = parseInt(e.key) - 1;
+                if (index < landmarkButtons.length) {
+                    landmarkButtons[index].click();
+                }
+            }
+            
+            // Ctrl+Z 撤销打标
+            if (e.ctrlKey && e.key.toLowerCase() === 'z') {
+                e.preventDefault();
+                if (!undoBtn.disabled) {
+                    undoBtn.click();
+                }
+            }
+            
+            // Ctrl+E 导出CSV
+            if (e.ctrlKey && e.key.toLowerCase() === 'e') {
+                e.preventDefault();
+                if (!exportBtn.disabled) {
+                    exportBtn.click();
+                }
+            }
+        });
+        
+        // 初始化显示
+        updateRecordsDisplay();
+    </script>
+</body>
+</html>
